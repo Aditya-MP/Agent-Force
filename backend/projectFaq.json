@@ -1,0 +1,37 @@
+[
+  {
+    "id": "min-ada",
+    "question": "What is the minimum ADA required to stake?",
+    "answer": "Most pools recommend at least 10 ADA to cover fees and keep enough for delegation."
+  },
+  {
+    "id": "network",
+    "question": "Which network does Agent Forces use?",
+    "answer": "The demo runs on Cardano Preview using Blockfrost."
+  },
+  {
+    "id": "rewards-time",
+    "question": "How long does it take to receive staking rewards?",
+    "answer": "First rewards appear after 15-20 days, then every 5 days (each epoch)."
+  },
+  {
+    "id": "pool-fees",
+    "question": "What are typical stake pool fees?",
+    "answer": "Good pools charge 0-5% margin plus 340 ADA fixed fee per epoch."
+  },
+  {
+    "id": "utxo-consolidation",
+    "question": "How do I consolidate UTXOs?",
+    "answer": "Send all your ADA to yourself in one transaction to merge small UTXOs."
+  },
+  {
+    "id": "wallet-safety",
+    "question": "How do I keep my wallet safe?",
+    "answer": "Never share your seed phrase, use hardware wallets for large amounts, verify addresses."
+  },
+  {
+    "id": "transaction-fees",
+    "question": "Why are my transaction fees high?",
+    "answer": "Too many UTXOs increase fees. Base fee is ~0.17 ADA plus ~0.000044 ADA per byte."
+  }
+]
