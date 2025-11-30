@@ -10,9 +10,14 @@
     "build": "cd frontend && npm run build"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "concurrently": "^9.2.1"
   },
-  "keywords": ["cardano", "ai", "blockchain", "assistant"],
+  "keywords": [
+    "cardano",
+    "ai",
+    "blockchain",
+    "assistant"
+  ],
   "author": "Agent Forces Team",
   "license": "MIT"
 }
