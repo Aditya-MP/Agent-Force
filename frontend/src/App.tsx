@@ -85,7 +85,7 @@ function App() {
   const checkBackendConnection = async () => {
     try {
       setConnectionStatus('connecting');
-      const res = await fetch('http://localhost:3001/health', { method: 'GET' });
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/health`, { method: 'GET' });
       if (res.ok) setConnectionStatus('connected');
       else setConnectionStatus('disconnected');
     } catch (e) {
@@ -103,7 +103,7 @@ function App() {
 
   const fetchWalletData = async (address: string) => {
     try {
-      const res = await fetch(`http://localhost:3001/api/wallet/${address}`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/wallet/${address}`);
       const data = await res.json();
       setWalletData(data);
     } catch (e) {
@@ -113,7 +113,7 @@ function App() {
 
   const fetchNetworkStats = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/network-stats');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/network-stats`);
       const data = await res.json();
       setNetworkData(data);
     } catch (e) {
@@ -123,7 +123,7 @@ function App() {
 
   const fetchRecommendedPools = async () => {
     try {
-      const res = await fetch('http://localhost:3001/api/pools');
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/pools`);
       const data = await res.json();
       setRecommendedPools(data);
     } catch (e) {
@@ -143,7 +143,7 @@ function App() {
 
     try {
       const startTime = Date.now();
-      const res = await fetch('http://localhost:3001/api/query', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -203,7 +203,7 @@ function App() {
     setTxDiag(null);
 
     try {
-      const res = await fetch('http://localhost:3001/api/troubleshoot-tx', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/troubleshoot-tx`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ txHash: txId.trim() })
