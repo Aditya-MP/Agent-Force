@@ -2,6 +2,10 @@
   "name": "agent-forces",
   "version": "1.0.0",
   "description": "Real-Time Cardano AI Assistant",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "scripts": {
     "start": "concurrently \"npm run backend\" \"npm run frontend\"",
     "backend": "cd backend && npm start",
