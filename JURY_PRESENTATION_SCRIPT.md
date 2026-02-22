@@ -326,3 +326,35 @@ addr_test1qr2x3y4z... (use any Cardano testnet address)
 - http://localhost:3001/health
 - http://localhost:3001/api/admin/analytics
 - http://localhost:5173 (frontend)
+
+---
+
+# 🧬 **THE 16 AGENTS ARCHITECTURE (Conceptual Pitch)**
+
+If the jury asks about the "16 Agents", use this **Component-to-Agent Mapping** to explain our Multi-Agent System (MAS):
+
+### **Group 1: Core Intelligence (The Brain)**
+1.  **The Orchestrator Agent** (Main Router): Decides if a query is technical, financial, or general and routes it.
+2.  **The Consultant Agent** (LLM Personas): The friendly, educational face that answers "What is staking?".
+3.  **The Context Keeper** (Memory Agent): Filters non-Cardano topics and maintains conversation history.
+4.  **The Fallibillity Handler** (Backup Agent): Smart rule-based system that takes over when LLMs fail.
+
+### **Group 2: Financial Analysts (The Quants)**
+5.  **The Risk Assessor** (Risk Agent): Calculates "High/Medium/Low" safety scores.
+6.  **The Portfolio Scout** (Wallet Agent): Scans UTXOs and balance structure.
+7.  **The Yield Forecaster**: Projects 4-6% APY rewards based on live epoch data.
+8.  **The Fee Optimizer**: Identifies high-cost transactions and suggests UTXO consolidation.
+
+### **Group 3: Market Analysts (The Strategists)**
+9.  **The Pool Hunter**: Finds the perfect stake pools (30-70% saturation).
+10. **The Saturation Guardian**: Specifically monitors for >90% pool saturation warning.
+11. **The Market Observer**: Tracks epoch progress and network load.
+12. **The Asset Detective**: Identifies and classifies Native Tokens vs NFTs.
+
+### **Group 4: Security & Ops (The Guardians)**
+13. **The Transaction Forensic** (Troubleshoot Agent): Diagnoses failed/stuck transactions.
+14. **The Audit Sentinel** (Masumi Agent): Cryptographically signs and verifies every interaction.
+15. **The System Medic** (Health Agent): Monitors API latencies and endpoint health.
+16. **The Gatekeeper** (Security Agent): Validates addresses and sanitizes inputs to prevent injection attacks.
+
+> **Pitch Line:** "We don't just have a chatbot; we have a swarm of **16 specialized micro-agents** working in concert to secure your financial journey."

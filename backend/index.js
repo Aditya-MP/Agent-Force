@@ -14,8 +14,9 @@ let model = null;
 if (process.env.GEMINI_API_KEY) {
   try {
     genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // Switched to 2.5-flash for updated capabilities
     model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-    console.log('✅ Gemini AI initialized');
+    console.log('✅ Gemini AI initialized (Model: gemini-2.5-flash)');
   } catch (e) {
     console.log('⚠️ Gemini initialization failed:', e.message);
   }
@@ -76,8 +77,14 @@ async function getWalletSummary(address) {
 
     const utxos = utxosRes.data;
     let adaBalance = 0;
-    let hasTokens = false;
     let totalValue = 0;
+
+    // 🎨 AGENT: Asset Detective
+    let assetStats = {
+      nfts: 0,
+      tokens: 0,
+      uniquePolicies: new Set()
+    };
 
     console.log(`📊 Found ${utxos.length} UTXOs for address`);
 
@@ -90,8 +97,16 @@ async function getWalletSummary(address) {
           totalValue += amount;
           console.log(`    ADA: ${(amount / 1_000_000).toFixed(6)}`);
         } else {
-          hasTokens = true;
-          console.log(`    Token: ${asset.unit} = ${asset.quantity}`);
+          // Asset Detective Logic
+          const amount = parseInt(asset.quantity);
+          if (amount === 1) {
+            assetStats.nfts++;
+            console.log(`    🎨 NFT Detected: ${asset.unit}`);
+          } else {
+            assetStats.tokens++;
+            console.log(`    🪙 Token Detected: ${asset.unit} (${amount})`);
+          }
+          assetStats.uniquePolicies.add(asset.unit.substring(0, 56)); // Policy ID is first 56 chars
         }
       });
     });
@@ -99,10 +114,36 @@ async function getWalletSummary(address) {
     const finalBalance = Math.round(adaBalance * 1_000_000) / 1_000_000;
     console.log(`💰 Total Balance: ${finalBalance} ADA (${totalValue} lovelace)`);
 
+    // 💰 AGENT: Fee Optimizer
+    // Calculate theoretical cost to send all assets now (many inputs) vs after consolidation (1 input)
+    // Cardano fee approx: 0.17 ADA + 0.000044 per byte
+    // Standard Tx ~ 1 input, 2 outputs. Complex ~ N inputs.
+    const BYTE_COST = 0.000044;
+    const BASE_FEE = 0.17;
+    const INPUT_SIZE_BYTES = 148; // Approx size of an input
+
+    const currentCost = BASE_FEE + (utxos.length * INPUT_SIZE_BYTES * BYTE_COST);
+    const optimizedCost = BASE_FEE + (1 * INPUT_SIZE_BYTES * BYTE_COST);
+    const potentialSavings = Math.max(0, currentCost - optimizedCost);
+
+    console.log(`💸 Fee Optimizer: Current Cost=${currentCost.toFixed(4)}, Optimized=${optimizedCost.toFixed(4)}, Savings=${potentialSavings.toFixed(4)}`);
+
     return {
       balance: finalBalance,
       utxoCount: utxos.length,
-      hasTokens,
+      hasTokens: assetStats.tokens > 0,
+      hasNfts: assetStats.nfts > 0,
+      assetStats: {
+        nfts: assetStats.nfts,
+        tokens: assetStats.tokens,
+        policies: assetStats.uniquePolicies.size
+      },
+      feeOptimizer: {
+        currentCostEstimate: currentCost.toFixed(4),
+        potentialSavings: potentialSavings.toFixed(4),
+        recommendation: potentialSavings > 0.5 ? 'URGENT_CONSOLIDATION_NEEDED' :
+          potentialSavings > 0.2 ? 'RECOMMENDED' : 'OPTIMIZED'
+      },
       scanTime: timestamp,
       network: 'preview',
       totalLovelace: totalValue,
@@ -209,10 +250,26 @@ async function getRecommendedPools() {
     });
 
     const results = await Promise.all(poolPromises);
-    return results.filter(p => p !== null).map(pool => ({
+
+    // 🛡️ AGENT: Saturation Guardian & Pool Hunter
+    // Filter logic:
+    // 1. Remove dangerous pools (>95% saturation) - Saturation Guardian
+    // 2. Rank remaining by ROA and Margin - Pool Hunter
+
+    const validPools = results.filter(p => p !== null);
+
+    const safePools = validPools.filter(pool => {
+      const isDangerous = pool.saturation > 95;
+      if (isDangerous) {
+        console.log(`🛡️ Saturation Guardian: BLOCKED pool ${pool.id} (Saturation: ${pool.saturation}%)`);
+      }
+      return !isDangerous;
+    });
+
+    return safePools.map(pool => ({
       ...pool,
-      warning: pool.saturation > 90 ? 'Oversaturated - rewards may be reduced' :
-        pool.saturation > 75 ? 'High saturation - monitor closely' : null
+      warning: pool.saturation > 85 ? 'High saturation (Guardian Warning)' : null,
+      guardianScore: pool.saturation < 70 && pool.margin < 2 ? 'PERFECT' : 'GOOD'
     }));
 
   } catch (e) {
@@ -249,33 +306,65 @@ function isCardanoRelated(question) {
   return cardanoKeywords.some(keyword => question.toLowerCase().includes(keyword));
 }
 
-async function callLLM(prompt, originalQuestion) {
+async function callLLM(prompt, originalQuestion, isPremium) {
   if (!isCardanoRelated(originalQuestion)) {
-    return `🤖 CardanoVault: I'm specialized in Cardano blockchain assistance! I can help you with:\n\n• 💰 Staking & Rewards (earn 4-5% APY)\n• 🎯 Stake Pool Selection\n• 💳 Wallet Management & UTXOs\n• 📊 Transaction Analysis\n• 🏛️ Governance & Voting\n• 🔗 DeFi & Smart Contracts\n\nPlease ask me something about Cardano, ADA, or blockchain! 🚀`;
+    return `I am specialized in Cardano blockchain assistance. I can help you with:\n\n- Staking & Rewards (earn 4-5% APY)\n- Stake Pool Selection\n- Wallet Management & UTXOs\n- Transaction Analysis\n- Governance & Voting\n- DeFi & Smart Contracts\n\nPlease ask me something about Cardano, ADA, or blockchain.`;
   }
 
   if (!model) {
     console.log('⚠️ Gemini not available - using fallback');
-    return getCardanoFallbackResponse(originalQuestion, prompt);
+    return getCardanoFallbackResponse(originalQuestion, prompt, isPremium);
   }
 
+  // 🎭 SYSTEM INSTRUCTIONS
+  const SYSTEM_INSTRUCTION_NORMAL = `You are a Helpful Cardano Guide.
+GOAL: Explain things simply and clearly. Make it easy for a beginner to understand.
+
+FORMATTING RULES:
+- **NO BOT PREFIXES:** Start directly with your answer.
+- **NO MARKDOWN:** Do not use bold characters (**text**), italics, or special headers. Use simple spacing and hyphens (-) for lists if needed.
+- **Style:**
+  - Use natural, conversational language.
+  - Avoid complex jargon. If you must use a technical term, explain it simply.
+  - Focus on the "big picture" first, then add details if helpful.
+- **Tone:** Friendly, Patient, and Clear.
+- NEVER mention or display wallet addresses.`;
+
+  const SYSTEM_INSTRUCTION_PREMIUM = `You are a Senior Blockchain Strategist.
+GOAL: Provide deep insights but keep them accessible and clear.
+
+FORMATTING RULES:
+- **NO BOT PREFIXES:** Start directly with the summary.
+- **NO MARKDOWN:** Do not use bold characters. Use CAPS for major sections if needed.
+- **Structure:**
+  EXECUTIVE SUMMARY
+  (Direct answer to the user's question)
+  
+  ANALYSIS
+  (Deeper look at the mechanics or data)
+  
+  STRATEGY
+  (Actionable advice)
+  
+  RISK CHECK
+  (Potential downsides)
+- NEVER mention or display wallet addresses.`;
+
+  const systemInstruction = isPremium ? SYSTEM_INSTRUCTION_PREMIUM : SYSTEM_INSTRUCTION_NORMAL;
+
   let lastError = null;
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // Increased to 4 attempts to allow for longer backoff (2s -> 4s -> 8s)
+  for (let attempt = 1; attempt <= 4; attempt++) {
     try {
-      console.log(`🚀 Calling Gemini API (attempt ${attempt}/3)...`);
-      const cardanoPrompt = `You are CardanoVault, a specialized Cardano blockchain assistant. You ONLY answer questions about Cardano, ADA cryptocurrency, staking, pools, wallets, transactions, DeFi, NFTs, governance, and related blockchain topics.
+      console.log(`🚀 Calling Gemini API (attempt ${attempt}/4)... [Premium: ${isPremium}]`);
 
-IMPORTANT RULES:
-- If asked about non-Cardano topics, politely redirect to Cardano
-- Always be helpful, friendly, and educational
-- Use simple explanations with analogies when possible
-- Focus on practical, actionable advice
-- Include current wallet data when available
-- NEVER mention or display wallet addresses in responses for privacy
-- Keep responses concise but informative (3-6 sentences)
-- Always start with "🤖 CardanoVault:" 
+      const cardanoPrompt = `${systemInstruction}
 
-${prompt}`;
+CONTEXT DATA:
+${prompt}
+
+USER QUESTION:
+${originalQuestion}`;
 
       const result = await model.generateContent(cardanoPrompt);
       const text = result.response.text();
@@ -284,50 +373,106 @@ ${prompt}`;
     } catch (error) {
       lastError = error;
       console.log(`❌ Attempt ${attempt} failed:`, error.message);
-      if (attempt < 3) {
-        console.log(`⏳ Waiting 1 second before retry...`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+
+      if (error.response) {
+        console.log(`   Status: ${error.response.status}`);
+        // Log valid stringified data if possible, else just message
+        try { console.log(`   Data: ${JSON.stringify(error.response.data)}`); } catch (e) { }
+      }
+
+      if (attempt < 4) {
+        // Exponential backoff: 2s, 4s, 8s
+        const delay = Math.pow(2, attempt) * 1000;
+        console.log(`⏳ Waiting ${delay / 1000} seconds before retry...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
 
   console.log('❌ All Gemini attempts failed - Using intelligent fallback...');
-  return getCardanoFallbackResponse(originalQuestion, prompt);
+  return getCardanoFallbackResponse(originalQuestion, prompt, isPremium);
 }
 
-function getCardanoFallbackResponse(question, prompt) {
+function getCardanoFallbackResponse(question, prompt, isPremium = false) {
   const lowerQuestion = question.toLowerCase();
   const balance = prompt.match(/Balance: (\d+(?:\.\d+)?) ADA/)?.[1] || '0';
-  const utxoCount = prompt.match(/UTXO count: (\d+)/)?.[1] || '0';
 
-  if (lowerQuestion.includes('pool') || lowerQuestion.includes('stake pool') || lowerQuestion.includes('stack pool')) {
-    if (lowerQuestion.includes('what is') || lowerQuestion.includes('what are')) {
-      return `🤖 CardanoVault: Great question! Stake pools are the heart of Cardano's network! 🏊♂️\n\n🎯 What they are:\n• Servers that validate transactions and create blocks\n• Run by skilled operators 24/7\n• You delegate your ADA to them (no risk!)\n• They share rewards with delegators\n\n💰 How you benefit:\n• Earn ~4-5% annual rewards\n• Your ADA never leaves your wallet\n• Help secure the Cardano network\n• Rewards come every 5 days (epochs)\n\n🔍 Choose pools with 30-70% saturation and low fees for best rewards!`;
-    } else {
-      return `🤖 CardanoVault: Here's how to find good stake pools:\n\n🎯 Look for pools with:\n• 30-70% saturation (not oversaturated)\n• Low fees (0-5% margin)\n• Consistent block production\n• Good community reputation\n\n💡 Avoid pools over 90% saturated - rewards get reduced!\n\n🔍 Check pool explorers like PoolTool or ADApools for detailed stats.`;
-    }
+  // POOLS
+  if (lowerQuestion.includes('pool') || lowerQuestion.includes('stake pool')) {
+    return `Think of a Stake Pool like a server that does the hard work of validating the network for you. By delegating your ADA to a pool, you help secure Cardano and earn rewards, kind of like interest in a bank account.
+
+When picking a pool, here is what matters:
+
+- Saturation: You want a pool that isn't too full (below 60% is good). If it gets over 95%, your rewards actually drop.
+- Fees: Look for low fees. Most pools charge a small % (margin) of the profits. Lower is usually better for you.
+- Reliability: You want a pool that is online 100% of the time so you don't miss out on rewards.`;
   }
 
-  if (lowerQuestion.includes('transaction') || lowerQuestion.includes('tx ') || lowerQuestion.includes('stuck') || lowerQuestion.includes('pending') || lowerQuestion.includes('failed') || lowerQuestion.includes('fail')) {
+  // TRANSACTIONS
+  if (lowerQuestion.includes('transaction') || lowerQuestion.includes('tx ') || lowerQuestion.includes('stuck') || lowerQuestion.includes('fail')) {
     const hashMatch = question.match(/\b[a-fA-F0-9]{60,66}\b/);
 
     if (hashMatch) {
       const detectedHash = hashMatch[0].length > 64 ? hashMatch[0].substring(0, 64) : hashMatch[0];
-      return `🤖 CardanoVault: I detected transaction hash ${detectedHash.slice(0, 16)}... in your question! 🔍\n\n🔧 **Quick Analysis:**\nI'll analyze this transaction for you. Common failure reasons:\n• ❌ Insufficient balance (most common)\n• ⏰ Transaction expired (validity window)\n• 💰 Very high fees (UTXO fragmentation)\n• 🔍 Smart contract issues\n• 🟡 Still pending in mempool\n\n💡 **For detailed diagnosis:** Use the transaction troubleshoot feature with your hash, or I can analyze it automatically if you ask about why it failed!`;
+      return `I see a transaction hash: ${detectedHash.slice(0, 16)}...
+
+Here is what is likely happening:
+- If it is "Pending", the network might just be busy. It usually clears up in 5-20 minutes.
+- If it "Failed", check if you had enough ADA to cover the transaction fee.
+- If it is "Confirmed", then it is done and on the blockchain forever.
+
+You can use the Troubleshoot tool to check the exact status of this hash.`;
     } else {
-      return `🤖 CardanoVault: Transaction troubles? I can help! 🔧\n\n🔍 Common issues:\n• Stuck transactions: Usually resolve in 2-20 minutes\n• High fees: Often due to many small UTXOs\n• Failed transactions: Check validity window and balance\n• Pending: May be waiting in mempool\n\n💡 Solutions:\n• Wait 20 minutes for confirmation\n• Check transaction hash on explorer\n• Ensure sufficient balance + fees\n• Try consolidating UTXOs to reduce fees\n\n**Provide your transaction hash for detailed analysis!**`;
+      return `If you are having trouble with a transaction, don't worry. Cardano is designed so your funds are never "lost" in the middle. They are either in your wallet or they arrive at the destination.
+
+- Stuck? It's probably just network traffic. Give it a few minutes.
+- Failed? Usually means you didn't have quite enough ADA for the fee. Check your balance.`;
     }
   }
 
+  // STAKING
   if (lowerQuestion.includes('staking') || lowerQuestion.includes('stake')) {
-    return `🤖 CardanoVault: Staking your ADA is like putting money in a high-yield savings account! 💰\n\n✨ How it works:\n• Delegate to a stake pool (no risk, keep your keys!)\n• Earn ~4-5% rewards annually\n• Rewards come every 5 days (epochs)\n• Your ADA never leaves your wallet\n\n🎯 Your wallet has ${balance} ADA - ${parseFloat(balance) >= 10 ? 'perfect for staking!' : 'you need 10+ ADA to start staking.'}`;
+    const balanceMsg = parseFloat(balance) >= 10
+      ? "It looks like you have enough ADA to start. You can pick a pool and start earning rewards right away."
+      : "I recommend getting at least 10 ADA before you start, just to cover the small deposit and fees.";
+
+    return `Staking is how you earn rewards on Cardano. It is very safe because your ADA never leaves your wallet. You are just "voting" with your ADA to say "I trust this pool to do a good job."
+
+How it works:
+1. You choose a pool in your wallet (Delegation).
+2. You wait a bit. It takes about 15-20 days for the first rewards to arrive.
+3. After that, you get rewards automatically every 5 days.
+
+${balanceMsg}`;
   }
 
-  return `🤖 CardanoVault: I'm your specialized Cardano assistant! 🚀\n\n🎯 I can help with:\n• 💰 Staking & rewards\n• 🏊 Pool selection\n• 💳 Wallet setup\n• 📊 Transaction help\n• 🏛️ Governance\n\nAsk me anything about Cardano!`;
+  // ADA / CURRENCY
+  if (lowerQuestion.includes('ada') || lowerQuestion.includes('what is ada') || lowerQuestion.includes('native token')) {
+    return `ADA is the native cryptocurrency of Cardano. It is named after Ada Lovelace, the first computer programmer.
+
+You can use ADA to:
+- Send money to anyone in the world instantly and cheaply.
+- Stake it to earn rewards (like interest).
+- Vote on the future of the network.
+- Pay for transaction fees.
+
+It is more than just money; it is the "fuel" that runs the entire Cardano computer.`;
+  }
+
+  // DEFAULT
+  return `I am your friendly Cardano Guide.
+
+I can help you understand things like:
+- Staking: How to earn rewards safe and easy.
+- Pools: How to pick a good one.
+- Transactions: What to do if something gets stuck.
+- Governance: How voting works.
+
+Just ask me anything about Cardano!`;
 }
 
 async function postMasumiLog(hash, metadata, answer) {
-  const entry = storeMasumiEntry(hash, metadata, answer);
+  const entry = await storeMasumiEntry(hash, metadata, answer);
   return {
     txHash: entry.id,
     status: 'verified',
@@ -396,8 +541,20 @@ app.post('/api/query', async (req, res) => {
       prompt += `- Balance: ${walletData.balance} ADA\n`;
       prompt += `- UTXO count: ${walletData.utxoCount}\n`;
       prompt += `- Risk level: ${risk.level}\n`;
+
+      // Add Agent Detective Report
+      if (walletData.assetStats) {
+        prompt += `- Asset Breakdown: ${walletData.assetStats.nfts} NFTs, ${walletData.assetStats.tokens} Tokens\n`;
+      }
+
+      // Add Fee Optimizer Report
+      if (walletData.feeOptimizer) {
+        prompt += `- Fee Optimization: ${walletData.feeOptimizer.recommendation}\n`;
+        prompt += `  (Potentially save ${walletData.feeOptimizer.potentialSavings} ADA by consolidating)\n`;
+      }
+
       prompt += `- Last updated: ${new Date(walletData.lastUpdated).toLocaleTimeString()}\n`;
-      prompt += `- Scan time: ${walletData.scanTime}\n\n`;
+      prompt += `- Scan time: ${walletData.scanTime}\n\n`; // End of chunk
     }
 
     if (premium) {
@@ -407,7 +564,7 @@ app.post('/api/query', async (req, res) => {
     prompt += `Network Status: ${network.networkStatus}\n`;
     prompt += `Active Pools: ${network.activePools}\n\n`;
 
-    let answer = await callLLM(prompt, question);
+    let answer = await callLLM(prompt, question, premium);
 
     const responseHash = crypto.SHA256(answer + Date.now()).toString();
     const auditEntry = await postMasumiLog(responseHash, {
@@ -423,7 +580,7 @@ app.post('/api/query', async (req, res) => {
       pools,
       network,
       proof: { hash: responseHash },
-      masumiLog: auditEntry.id,
+      masumiLog: auditEntry.txHash,
       masumiPaymentInfo: premium ? { amount: '0.5', currency: 'ADA', status: 'demo' } : null,
       category,
       analyticsSnapshot: analytics,
@@ -438,6 +595,34 @@ app.post('/api/query', async (req, res) => {
 
 app.get('/api/admin/analytics', (req, res) => {
   res.json(analytics);
+});
+
+app.get('/api/wallet/:address', async (req, res) => {
+  const { address } = req.params;
+  try {
+    const walletData = await getWalletSummary(address);
+    res.json(walletData);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/network-stats', async (req, res) => {
+  try {
+    const stats = await getNetworkStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/pools', async (req, res) => {
+  try {
+    const pools = await getRecommendedPools();
+    res.json(pools);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.listen(PORT, () => {

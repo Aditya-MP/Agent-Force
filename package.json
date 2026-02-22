@@ -12,7 +12,15 @@
   "devDependencies": {
     "concurrently": "^9.1.0"
   },
-  "keywords": ["cardano", "ai", "blockchain", "assistant"],
+  "keywords": [
+    "cardano",
+    "ai",
+    "blockchain",
+    "assistant"
+  ],
   "author": "Agent Forces Team",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "firebase": "^12.9.0"
+  }
 }

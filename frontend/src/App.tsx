@@ -3,8 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Send, Shield, Zap, Activity, Grid,
   Wallet, Settings, ChevronRight, AlertTriangle,
-  CheckCircle, Loader, Terminal, Lock
+  CheckCircle, Loader, Terminal, Lock, Plus
 } from 'lucide-react';
+// ... (lines 8-204 remain unchanged)
+
 import LoginPage from './components/LoginPage';
 import AdminAnalytics from './components/AdminAnalytics';
 import './App.css';
@@ -95,6 +97,8 @@ function App() {
     setWalletAddress(address);
     setIsLoggedIn(true);
     fetchWalletData(address);
+    fetchNetworkStats();
+    fetchRecommendedPools();
   };
 
   const fetchWalletData = async (address: string) => {
@@ -104,6 +108,26 @@ function App() {
       setWalletData(data);
     } catch (e) {
       console.log('Wallet data fetch failed');
+    }
+  };
+
+  const fetchNetworkStats = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/network-stats');
+      const data = await res.json();
+      setNetworkData(data);
+    } catch (e) {
+      console.log('Network stats fetch failed');
+    }
+  };
+
+  const fetchRecommendedPools = async () => {
+    try {
+      const res = await fetch('http://localhost:3001/api/pools');
+      const data = await res.json();
+      setRecommendedPools(data);
+    } catch (e) {
+      console.log('Pools fetch failed');
     }
   };
 
@@ -204,6 +228,14 @@ function App() {
     }
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setTxId('');
+    setTxDiag(null);
+    setLastProof('');
+    setInput('');
+  };
+
   // --- Render Helpers ---
   const getPoolColor = (status: string, saturation: number) => {
     if (status === 'oversaturated' || saturation > 90) return 'text-red-400 border-red-500/30 bg-red-500/10';
@@ -243,6 +275,13 @@ function App() {
                 <span className="text-xs text-gray-400 font-medium uppercase tracking-wider">{connectionStatus}</span>
               </div>
             </div>
+            <button
+              onClick={handleNewChat}
+              className="ml-auto p-2 rounded-lg bg-white/5 hover:bg-neon-cyan/20 text-gray-400 hover:text-neon-cyan transition-all border border-white/5 hover:border-neon-cyan/30"
+              title="New Chat"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
           </div>
 
           {/* Quick Actions */}
