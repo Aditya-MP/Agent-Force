@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BarChart, Activity, PieChart, Info, HelpCircle } from 'lucide-react';
 
 async function fetchAnalytics() {
-  const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/admin/analytics`);
+  const res = await fetch(`/api/admin/analytics`);
   if (!res.ok) throw new Error('Failed to load analytics');
   return res.json();
 }

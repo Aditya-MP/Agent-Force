@@ -622,8 +622,10 @@ app.get('/api/pools', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 CardanoVault Backend running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
-  console.log(`💬 Query endpoint: http://localhost:${PORT}/api/query`);
-});
+// app.listen(PORT, () => {
+//   console.log(`🚀 CardanoVault Backend running on port ${PORT}`);
+//   console.log(`📊 Health check: http://localhost:${PORT}/health`);
+//   console.log(`💬 Query endpoint: http://localhost:${PORT}/api/query`);
+// });
+
+module.exports = app;
