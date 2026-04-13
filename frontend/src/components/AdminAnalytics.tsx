@@ -28,8 +28,8 @@ const AdminAnalytics: React.FC = () => {
   ];
 
   return (
-    <div className="flex-1 overflow-auto p-8 relative">
-      <div className="absolute inset-0 bg-gradient-to-br from-black/50 via-transparent to-black/50 pointer-events-none" />
+    <div className="flex-1 overflow-auto p-8 relative bg-transparent">
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00f3ff]/5 rounded-full blur-[120px] pointer-events-none" />
 
       <div className="relative z-10 max-w-6xl mx-auto">
         <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-neon-cyan to-white mb-8 flex items-center gap-3">
@@ -41,8 +41,9 @@ const AdminAnalytics: React.FC = () => {
           {metrics.map((metric, i) => (
             <div
               key={i}
-              className={`group p-6 rounded-2xl border ${metric.border} ${metric.bg} backdrop-blur-sm transition-all hover:transform hover:-translate-y-1 hover:shadow-lg`}
+              className={`group p-6 rounded-[24px] bg-gradient-to-br from-[#1b2230] to-[#111620] border border-[#00f3ff]/20 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1),0_10px_20px_rgba(0,243,255,0.05)] backdrop-blur-sm transition-all hover:scale-105 hover:shadow-[0_10px_30px_rgba(0,243,255,0.2)] hover:border-[#00f3ff]/50 relative overflow-hidden`}
             >
+              <div className="absolute inset-0 bg-gradient-to-b from-[#00f3ff]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex items-center justify-between mb-4">
                 <metric.icon className={`w-8 h-8 ${metric.color} opacity-80 group-hover:scale-110 transition-transform`} />
               </div>
@@ -56,8 +57,8 @@ const AdminAnalytics: React.FC = () => {
           ))}
         </div>
 
-        <div className="p-6 rounded-2xl border border-neon-cyan/20 bg-neon-cyan/5 backdrop-blur-sm">
-          <h3 className="text-lg font-bold text-neon-cyan mb-6 flex items-center gap-2">
+        <div className="p-8 rounded-[24px] bg-gradient-to-br from-[#1b2230] to-[#111620] border border-[#00f3ff]/20 shadow-[inset_0_1px_2px_rgba(255,255,255,0.1),0_10px_20px_rgba(0,243,255,0.05)] backdrop-blur-sm relative overflow-hidden">
+          <h3 className="text-xl font-bold text-white drop-shadow-[0_0_8px_#00f3ff] mb-8 flex items-center gap-2">
             <PieChart className="w-5 h-5" />
             Query Distribution
           </h3>
@@ -68,8 +69,8 @@ const AdminAnalytics: React.FC = () => {
               { label: 'Tx Help', value: txHelp, color: 'bg-neon-cyan', text: 'text-neon-cyan' },
               { label: 'Other', value: other, color: 'bg-pink-400', text: 'text-pink-400' }
             ].map((item, i) => (
-              <div key={i} className="flex-1 min-w-[140px] p-4 rounded-xl bg-black/40 border border-white/5">
-                <div className="flex justify-between items-center mb-3 text-xs uppercase tracking-wider text-gray-500 font-bold">
+              <div key={i} className="flex-1 min-w-[140px] p-5 rounded-[20px] bg-[#0a0c10] border border-[#00f3ff]/10 shadow-[inset_0_2px_10px_rgba(0,0,0,0.5)] relative z-10 transition-transform hover:scale-105">
+                <div className="flex justify-between items-center mb-3 text-[10px] uppercase tracking-widest text-[#6c7b91] font-bold">
                   {item.label}
                 </div>
                 <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-2">
