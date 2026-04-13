@@ -1,4 +1,5 @@
 // @ts-nocheck
+import React, { useEffect, useRef, useState } from 'react';
 
 import * as echarts from 'echarts';
 import { motion, AnimatePresence } from 'framer-motion';

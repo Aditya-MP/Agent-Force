@@ -1,4 +1,5 @@
 // @ts-nocheck
+import React, { useEffect, useRef, useState } from 'react';
 
 import { ShieldCheck, Database, Clock, Fingerprint, RefreshCcw, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

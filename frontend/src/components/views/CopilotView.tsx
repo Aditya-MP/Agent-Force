@@ -1,4 +1,5 @@
 // @ts-nocheck
+import React, { useEffect, useRef, useState } from 'react';
 
 import { Terminal, MessageSquare, Loader, Send, Shield, User, Activity, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';

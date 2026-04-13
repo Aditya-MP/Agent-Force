@@ -1,4 +1,5 @@
 // @ts-nocheck
+import React, { useEffect, useRef, useState } from 'react';
 
 import * as echarts from 'echarts';
 import { Layers, Zap, Activity, CheckCircle, AlertTriangle, Cpu, TrendingUp } from 'lucide-react';
